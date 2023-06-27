@@ -5,7 +5,7 @@ import { reactive } from 'vue';
 import { Inertia } from '@inertiajs/inertia';
 import ValidationErrors from '@/Components/ValidationErrors.vue';
 
-defineProps({ errors:Object})
+defineProps({ errors: Object})
 
 const form = reactive({
     name: null,
