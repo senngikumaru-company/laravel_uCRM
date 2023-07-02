@@ -17,11 +17,6 @@ class CustomerController extends Controller
      */
     public function index(Request $request)
     {
-        // $customers = Customer::SearchCustomers('ナスノ')
-        // ->select('id', 'name', 'kana', 'tel')->paginate(50);
-
-        // dd($customers);
-
         $customers = Customer::SearchCustomers($request->search)
             ->select('id', 'name', 'kana', 'tel')->paginate(50);
 
