@@ -1,80 +1,55 @@
-<script setup>
-import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
-import { Head } from '@inertiajs/vue3';
-import { reactive, onMounted } from 'vue';
-import { getToday } from '@/common';
-import Chart from '@/Components/Chart.vue';
-import ResultTable from '@/Components/ResultTable.vue';
+<?php
 
+namespace App\Http\Controllers\Api;
 
-onMounted(() => {
-    form.startDate = getToday()
-    form.endDate = getToday()
-})
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use App\Models\Order;
+use Illuminate\Support\Facades\DB;
+use App\Services\AnalysisService;
+use App\Services\DecileService;
+use App\Services\RFMService;
 
-const form = reactive({
-    startDate: null,
-    endDate: null,
-    type: 'perDay'
-})
+class AnalysisController extends Controller
+{
+    public function index(Request $request)
+    {
+        $subQuery = Order::betweenDate($request->startDate, $request->endDate);
 
-const data = reactive({})
+        if($request->type === 'perDay'){
+           list($data, $labels, $totals) = AnalysisService::perDay($subQuery);
+        }
 
-const getData = async () => {
-    try {
-        await axios.get('/api/analysis/', {
-            params: {
-                startDate: form.startDate,
-                endDate: form.endDate,
-                type: form.type
-            }
-        })
-            .then(res => {
-                data.data = res.data.data
-                data.labels = res.data.labels
-                data.totals = res.data.totals
-                data.type = res.data.type
-                console.log(res.data)
-            })
-    } catch (e) {
-        console.log(e.message)
+        if($request->type === 'perMonth'){
+            list($data, $labels, $totals) = AnalysisService::perMonth($subQuery);
+         }
+
+         if($request->type === 'perYear'){
+            list($data, $labels, $totals) = AnalysisService::perYear($subQuery);
+         }
+
+         if($request->type === 'decile'){
+            list($data, $labels, $totals) = DecileService::decile($subQuery);
+         }
+
+         if($request->type === 'rfm'){
+            list($data, $totals, $eachCount) = RFMService::rfm($subQuery, $request->rfmPrms);
+
+            return response()->json([
+                'data' => $data,
+                'type' => $request->type,
+                'eachCount' => $eachCount,
+                'totals' => $totals,
+            ], Response::HTTP_OK);
+
+        }
+        return response()->json([
+            'data' => $data,
+            'type' => $request->type,
+            'labels' => $labels,
+            'totals' => $totals,
+        ], Response::HTTP_OK);
+
     }
 }
-
-
-</script>
-
-<template>
-    <Head title="データ分析" />
-
-    <AuthenticatedLayout>
-        <template #header>
-            <h2 class="font-semibold text-xl text-gray-800 leading-tight">データ分析</h2>
-        </template>
-
-        <div class="py-12">
-            <div class="max-w-7xl mx-auto sm:px-6 lg:px-8">
-                <div class="bg-white overflow-hidden shadow-sm sm:rounded-lg">
-                    <div class="p-6 text-gray-900">
-                        <form @submit.prevent="getData">
-                            分析方法<br>
-                            <input type="radio" v-model="form.type" value="perDay" class="mr-1" checked><span class="mr-4">日別</span>
-                            <input type="radio" v-model="form.type" value="perMonth" class="mr-1"><span class="mr-4">月別</span>
-                            <input type="radio" v-model="form.type" value="perYear" class="mr-1"><span class="mr-4">年別</span>
-                            <input type="radio" v-model="form.type" value="decile" class="mr-1"><span class="mr-4">デシル分析</span><br>
-                            From: <input type="date" name="startDate" v-model="form.startDate">
-                            To: <input type="date" name="endDate" v-model="form.endDate"><br>
-                            <button
-                                class="flex mt-4 mx-auto text-white bg-indigo-500 border-0 py-2 px-8 focus:outline-none hover:bg-indigo-600 rounded text-lg">分析する</button>
-                        </form>
-
-                        <div v-show="data.data">
-                        <Chart :data="data" />
-                        <ResultTable :data="data" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </AuthenticatedLayout>
-</template>

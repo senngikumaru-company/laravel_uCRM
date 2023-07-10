@@ -82,7 +82,6 @@ class DecileService
 
         $labels = $data->pluck('decile');
         $totals = $data->pluck('totalPerGroup');
-
         return [$data, $labels, $totals];
 
     }
